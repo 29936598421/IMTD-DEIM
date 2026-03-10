@@ -1,2 +1,2 @@
 # IMTD-DEIM
-The codes will be upload soon.
+The codes will be uploaded soon.
