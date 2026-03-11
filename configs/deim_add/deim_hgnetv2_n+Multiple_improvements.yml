@@ -1,0 +1,76 @@
+__include__: [
+  '../deim_dfine/dfine_hgnetv2_n_coco.yml',
+  '../base/deim.yml'
+]
+
+output_dir: ./deim_outputs/deim_hgnetv2_l_visdrone
+
+HGNetv2:
+  pretrained: False #默认是使用的
+  agg: 'CBAM'
+
+  addconv: 'StarConv'
+
+DEIM:
+  encoder:  HybridEncoder_AiGuai
+
+HybridEncoder_AiGuai:
+    version: 'deim'
+    fpn_pan_blocks: 'C2f'
+    fpn_pan_blocks: 'C3k2_PATConv'
+
+    C3k_flag: False
+
+    mlp_blocks: 'FMFFN'
+    fusion_blocks: 'CGAFusion'
+    upsample_blocks: 'MEUM' #
+
+    downsample_blocks: 'HWDown'
+
+# 下方是默认版本参数，不要去动
+    in_channels: [ 512, 1024, 2048 ]
+    feat_strides: [ 8, 16, 32 ]
+    hidden_dim: 256
+    use_encoder_idx: [ 2 ]
+    num_encoder_layers: 1
+    nhead: 8
+    dim_feedforward: 1024
+    dropout: 0.
+    enc_act: 'gelu'
+  # cross
+    expansion: 1.0
+    depth_mult: 1
+    act: 'silu'
+
+
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.000025
+    -
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'
+      weight_decay: 0.
+
+  lr: 0.0005
+  betas: [0.9, 0.999]
+  weight_decay: 0.000125
+
+# Increase to search for the optimal ema
+epoches: 58 # 72 + 2n
+
+## Our LR-Scheduler
+flat_epoch: 29    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 8
+
+train_dataloader:
+  dataset:
+    transforms:
+      policy:
+        epoch: [4, 29, 50]   # list
+
+  collate_fn:
+    mixup_epochs: [4, 29]
+    stop_epoch: 50
